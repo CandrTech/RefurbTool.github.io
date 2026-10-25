@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>iPhone stickermaker</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+:root{--bg:#eef1f4;--ink:#16202a;--card:#fff;--line:#cfd6dd;--accent:#0a63c9;--muted:#5d6b78}
+@media (prefers-color-scheme:dark){:root{--bg:#12171c;--ink:#e8edf2;--card:#1c242c;--line:#33414d;--accent:#4aa3ff;--muted:#93a1ae}}
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;font-family:-apple-system,system-ui,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);padding:max(12px,env(safe-area-inset-top)) 12px max(24px,env(safe-area-inset-bottom))}
+main{max-width:720px;margin:0 auto}
+h1{font-size:1.4rem;margin:8px 0 14px}
+section{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px}
+h2{font-size:1rem;margin:0 0 10px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+label{display:flex;flex-direction:column;font-size:.8rem;color:var(--muted);gap:3px}
+label.full{grid-column:1/-1}
+input,select{font-size:16px;padding:9px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--ink);width:100%}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+button{font-size:1rem;padding:11px 14px;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:#fff;font-weight:600;flex:1;min-width:140px}
+button.sec{background:transparent;color:var(--accent)}
+.tabs{display:flex;gap:6px;margin-bottom:12px}
+button.tab{background:transparent;color:var(--accent);min-width:0;padding:10px 6px}
+button.tab.on{background:var(--accent);color:#fff}
+#q{font-size:16px;padding:12px;width:100%;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+#qres{margin-top:8px;display:flex;flex-direction:column;gap:6px}
+#qres:empty{display:none}
+#qres button{display:flex;justify-content:space-between;gap:8px;text-align:left;background:var(--bg);color:var(--ink);border:1px solid var(--line);font-weight:500;font-size:.95rem;padding:10px 12px;min-width:0;flex:none}
+#qres small{color:var(--muted);white-space:nowrap}
+.preview{overflow-x:auto;padding:6px 0}
+/* ---------- sticker ---------- */
+#sticker{background:#fff;color:#000;font-family:Arial,Helvetica,sans-serif;position:relative;overflow:hidden;border:1px solid #000;display:flex;gap:2mm;padding:2.5mm;line-height:1.25;font-size:3.4mm}
+#sticker .left{flex:1;display:flex;flex-direction:column;justify-content:space-between;min-width:0}
+#sticker .title{font-size:5.2mm;font-weight:800;line-height:1.1}
+#sticker .row{display:flex;gap:2mm;flex-wrap:wrap}
+#sticker .row span{white-space:nowrap}
+#sticker b{font-weight:700}
+#sticker .tag{display:inline-block;background:#000;color:#fff;padding:.2mm 1.4mm;border-radius:.8mm;font-weight:700}
+#sticker .right{display:flex;flex-direction:column;align-items:center;justify-content:center;width:26mm}
+#sticker .gb{background:#1a8fd8;color:#fff;font-weight:800;font-size:5mm;padding:2mm 2.5mm;text-align:center;width:100%}
+#sticker svg{width:100%;height:auto;max-height:14mm}
+#sticker .cp,#sticker .tb,#sticker .gr,#sticker .mn{width:100%;display:flex;flex-direction:column;min-width:0}
+#sticker .cp-t{font-size:5.4mm;font-weight:800;line-height:1.1}
+#sticker .cp-s{font-size:3.6mm;margin-top:.5mm}
+#sticker .cp-chips{display:flex;flex-wrap:wrap;gap:1mm;margin-top:1.5mm}
+#sticker .cp-chips i{font-style:normal;border:.3mm solid #000;border-radius:1mm;padding:.2mm 1.2mm;font-size:3.1mm}
+#sticker .cp-b{margin-top:auto;text-align:center}
+#sticker .cp-b svg{width:100%;height:11mm;max-height:none;display:block}
+#sticker .cp-sr{font-size:2.8mm;letter-spacing:.3mm;margin-top:.5mm}
+#sticker .tb-h{background:#000;color:#fff;font-weight:800;font-size:4.6mm;padding:1.3mm 2.5mm;margin:-2.5mm -2.5mm 1.5mm}
+#sticker .tb-body{display:flex;gap:2mm;flex:1;min-height:0}
+#sticker .tb-g{flex:1;display:grid;grid-template-columns:auto 1fr;gap:.4mm 2mm;align-content:start;font-size:3.1mm}
+#sticker .tb-g span{color:#444}
+#sticker .tb-r{width:26mm;display:flex;flex-direction:column;justify-content:center;text-align:center;font-size:2.6mm}
+#sticker .tb-r svg{height:14mm;max-height:none}
+#sticker .gr-top{display:flex;justify-content:space-between;align-items:flex-start;gap:2mm}
+#sticker .gr-t{font-size:6.2mm;font-weight:900;line-height:1.05}
+#sticker .gr-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1.2mm;margin-top:1.5mm}
+#sticker .gr-stats div{border:.4mm solid #000;border-radius:1.2mm;padding:.8mm 1mm;text-align:center}
+#sticker .gr-stats small{display:block;font-size:2.4mm;color:#444;text-transform:uppercase}
+#sticker .gr-stats b{font-size:4.2mm}
+#sticker .gr-bot{display:flex;gap:2mm;margin-top:auto;align-items:flex-end}
+#sticker .gr-info{flex:1;font-size:3mm;line-height:1.3}
+#sticker .gr-bc{width:34mm;text-align:center;font-size:2.4mm}
+#sticker .gr-bc svg{height:10mm;max-height:none}
+#sticker .mn{align-items:center;justify-content:center;text-align:center;gap:1mm}
+#sticker .mn-t{font-size:6mm;font-weight:800;line-height:1.1}
+#sticker .mn-s{font-size:3.8mm}
+#sticker .mn svg{width:70%;height:12mm;max-height:none}
+#sticker .mn-sr{font-size:3mm;letter-spacing:.4mm}
+#sticker .bcwrap{width:100%;text-align:center;font-size:2.6mm}
+@media print{
+ body{background:#fff;padding:0}
+ main>*:not(.printzone){display:none!important}
+ .printzone,.printzone section{border:0;padding:0;margin:0;background:none}
+ .printzone h2,.printzone .btns{display:none}
+ .preview{overflow:visible}
+ #sticker{border:0}
+}
+</style>
+</head>
+<body>
+<main>
+<h1>iPhone stickermaker</h1>
+
+<section>
+ <input id="q" type="search" placeholder="Zoek model, A-nummer of SM-nummer (bijv. 13 pro, A54, S23)" autocomplete="off" enterkeyhint="search">
+ <div id="qres"></div>
+</section>
+
+<section>
+ <div class="tabs">
+  <button type="button" class="tab" data-cat="iPhone">iPhone</button>
+  <button type="button" class="tab" data-cat="Samsung">Samsung</button>
+  <button type="button" class="tab" data-cat="MacBook">MacBook</button>
+  <button type="button" class="tab" data-cat="Anders">Anders</button>
+ </div>
+ <input type="hidden" id="cat" value="iPhone">
+ <h2>Gegevens</h2>
+ <div class="grid">
+  <label class="full">Model<select id="model"></select></label>
+  <label class="full" id="modelOtherL" hidden>Eigen model<input id="modelOther"></label>
+  <label>Opslag<select id="storage"><option value="64">64 GB</option><option value="128">128 GB</option><option value="256">256 GB</option><option value="512">512 GB</option><option value="1024">1 TB</option><option value="2048">2 TB</option><option value="4096">4 TB</option><option value="8192">8 TB</option></select></label>
+  <label>Kleur<select id="color"></select></label>
+  <label id="colorOtherL" hidden>Eigen kleur<input id="colorOther"></label>
+  <label>Modelnummer<input id="mnum" value="MLMT3LL/A"></label>
+  <label>A-nummer<input id="anum" value="A2482"></label>
+  <label class="full">Serienummer (komt als barcode)<input id="serial" value="M70YYOJNW3" autocapitalize="characters"></label>
+  <label>iOS-versie<input id="ios" value="18.3.1" inputmode="decimal"></label>
+  <label>Batterij %<input id="batt" value="99" inputmode="numeric"></label>
+  <label>FMI<select id="fmi"><option>Off</option><option>On</option></select></label>
+  <label>SIM<select id="sim"><option>Unlocked</option><option>Locked</option></select></label>
+  <label>Processor<input id="chip" value="M2"></label>
+  <label>RAM<select id="ram"><option value="8">8 GB</option><option value="16">16 GB</option><option value="18">18 GB</option><option value="24">24 GB</option><option value="32">32 GB</option><option value="36">36 GB</option><option value="48">48 GB</option><option value="64">64 GB</option><option value="96">96 GB</option><option value="128">128 GB</option></select></label>
+  <label>Batterijcycli<input id="cycles" inputmode="numeric"></label>
+  <label class="full">Gerepareerd?<select id="rep"><option value="No">Nee</option><option value="Yes - OEM parts">Ja - OEM onderdelen</option><option value="Yes - Original parts">Ja - Originele onderdelen</option></select></label>
+  <label>Datum<input id="date" type="date"></label>
+  <label>Grade / conditie<input id="grade" value="Working Phone"></label>
+  <label>Locatie / code<input id="loc" value="PC-14"></label>
+  <label>Aantal<input id="qty" value="1" inputmode="numeric"></label>
+ </div>
+</section>
+
+<section>
+ <h2>Ontwerp en formaat</h2>
+ <div class="grid">
+  <label class="full">Ontwerp<select id="lay"><option value="klassiek">Klassiek</option><option value="compact">Compact</option><option value="tabel">Tabel</option><option value="groot">Groot</option><option value="minimaal">Minimaal</option></select></label>
+  <label>Breedte (mm)<input id="w" value="100" inputmode="numeric"></label>
+  <label>Hoogte (mm)<input id="h" value="50" inputmode="numeric"></label>
+ </div>
+</section>
+
+<section class="printzone">
+ <h2>Voorbeeld</h2>
+ <div class="preview"><div id="sticker"></div></div>
+ <div class="btns" style="margin-top:10px">
+  <button id="saveImg">Opslaan als afbeelding</button>
+  <button id="pdf" class="sec">Print / PDF</button>
+ </div>
+ <p style="font-size:.8rem;color:var(--muted);margin:10px 0 0">Op iPhone: tik op “Opslaan als afbeelding” en kies “Bewaar afbeelding” of open direct je sticker-app. De velden worden onthouden op dit toestel.</p>
+</section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const ids = ["cat","lay","chip","ram","cycles","model","modelOther","colorOther","storage","color","mnum","anum","serial","ios","batt","fmi","sim","rep","date","grade","loc","qty","w","h"];
+const KEY = "stickermaker-v1";
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+const COLORS = {"XR": ["Black", "White", "Blue", "Yellow", "Coral", "Red"], "11": ["Black", "White", "Green", "Yellow", "Purple", "Red"], "11 Pro": ["Space Gray", "Silver", "Gold", "Midnight Green"], "SE (2nd gen)": ["Black", "White", "Red"], "12 mini": ["Black", "White", "Red", "Green", "Blue", "Purple"], "12 Pro": ["Graphite", "Silver", "Gold", "Pacific Blue"], "13 mini": ["Pink", "Blue", "Midnight", "Starlight", "Red", "Green"], "13 Pro": ["Graphite", "Gold", "Silver", "Sierra Blue", "Alpine Green"], "SE (3rd gen)": ["Midnight", "Starlight", "Red"], "14": ["Blue", "Purple", "Midnight", "Starlight", "Red", "Yellow"], "14 Pro": ["Space Black", "Silver", "Gold", "Deep Purple"], "15": ["Black", "Blue", "Green", "Yellow", "Pink"], "15 Pro": ["Black Titanium", "White Titanium", "Blue Titanium", "Natural Titanium"], "16e": ["Black", "White"], "16": ["Black", "White", "Pink", "Teal", "Ultramarine"], "16 Pro": ["Black Titanium", "White Titanium", "Natural Titanium", "Desert Titanium"], "17": ["Black", "White", "Mist Blue", "Sage", "Lavender"], "Air": ["Space Black", "Cloud White", "Light Gold", "Sky Blue"], "17 Pro": ["Silver", "Cosmic Orange", "Deep Blue"], "18 Pro": ["Burgundy", "Glacier", "Black", "Silver"], "11 Pro Max": ["Space Gray", "Silver", "Gold", "Midnight Green"], "12": ["Black", "White", "Red", "Green", "Blue", "Purple"], "12 Pro Max": ["Graphite", "Silver", "Gold", "Pacific Blue"], "13": ["Pink", "Blue", "Midnight", "Starlight", "Red", "Green"], "13 Pro Max": ["Graphite", "Gold", "Silver", "Sierra Blue", "Alpine Green"], "14 Plus": ["Blue", "Purple", "Midnight", "Starlight", "Red", "Yellow"], "14 Pro Max": ["Space Black", "Silver", "Gold", "Deep Purple"], "15 Plus": ["Black", "Blue", "Green", "Yellow", "Pink"], "15 Pro Max": ["Black Titanium", "White Titanium", "Blue Titanium", "Natural Titanium"], "16 Plus": ["Black", "White", "Pink", "Teal", "Ultramarine"], "16 Pro Max": ["Black Titanium", "White Titanium", "Natural Titanium", "Desert Titanium"], "17 Pro Max": ["Silver", "Cosmic Orange", "Deep Blue"], "18 Pro Max": ["Burgundy", "Glacier", "Black", "Silver"]};
+const IPHONES=["XR","11","11 Pro","11 Pro Max","SE (2nd gen)","12 mini","12","12 Pro","12 Pro Max","13 mini","13","13 Pro","13 Pro Max","SE (3rd gen)","14","14 Plus","14 Pro","14 Pro Max","15","15 Plus","15 Pro","15 Pro Max","16e","16","16 Plus","16 Pro","16 Pro Max","17","Air","17 Pro","17 Pro Max","18 Pro","18 Pro Max"];
+const S26=["Black","Cobalt Violet","Sky Blue","White","Pink Gold","Silver Shadow"];
+const SAMSUNG={
+"Galaxy A03":["Black", "Blue", "Red", "White"],
+"Galaxy A03s":["Black", "White", "Blue"],
+"Galaxy A04":["Black", "Copper", "Green", "White"],
+"Galaxy A04s":["Black", "Copper", "Green", "White"],
+"Galaxy A05":["Black", "Silver", "Light Green"],
+"Galaxy A05s":["Black", "Light Green", "Light Violet", "Silver"],
+"Galaxy A06":["Black", "Gold", "Light Blue"],
+"Galaxy A07":["Black", "Green", "Light Violet"],
+"Galaxy A10":["Black", "Blue", "Red"],
+"Galaxy A11":["Black", "White", "Red", "Blue"],
+"Galaxy A12":["Black", "White", "Blue", "Red"],
+"Galaxy A13":["Black", "White", "Blue", "Peach"],
+"Galaxy A14":["Black", "Silver", "Light Green", "Dark Red"],
+"Galaxy A15":["Blue Black", "Blue", "Light Blue", "Yellow"],
+"Galaxy A16":["Blue Black", "Light Green", "Gray"],
+"Galaxy A17":["Black", "Blue", "Gray"],
+"Galaxy A20e":["Black", "White", "Blue", "Coral", "Yellow"],
+"Galaxy A21s":["Black", "White", "Blue", "Red"],
+"Galaxy A22":["Black", "White", "Mint", "Violet"],
+"Galaxy A23":["Black", "White", "Blue", "Peach"],
+"Galaxy A24":["Black", "Silver", "Light Green", "Lavender"],
+"Galaxy A25":["Blue Black", "Blue", "Yellow", "Light Blue"],
+"Galaxy A26":["Black", "White", "Mint", "Peach Pink"],
+"Galaxy A30":["Black", "Blue", "White"],
+"Galaxy A31":["Prism Crush Black", "Prism Crush White", "Prism Crush Blue", "Prism Crush Red"],
+"Galaxy A32":["Awesome Black", "Awesome White", "Awesome Blue", "Awesome Violet"],
+"Galaxy A33":["Awesome Black", "Awesome White", "Awesome Blue", "Awesome Peach"],
+"Galaxy A34":["Awesome Graphite", "Awesome Silver", "Awesome Lime", "Awesome Violet"],
+"Galaxy A35":["Awesome Iceblue", "Awesome Navy", "Awesome Lilac", "Awesome Lemon"],
+"Galaxy A36":["Awesome Black", "Awesome White", "Awesome Lavender", "Awesome Lime"],
+"Galaxy A40":["Black", "Blue", "White", "Coral"],
+"Galaxy A41":["Prism Crush Black", "Prism Crush White", "Prism Crush Blue", "Prism Crush Red"],
+"Galaxy A42":["Prism Dot Black", "Prism Dot Gray", "Prism Dot White", "Prism Dot Pink"],
+"Galaxy A50":["Black", "White", "Blue", "Coral"],
+"Galaxy A51":["Prism Crush Black", "Prism Crush White", "Prism Crush Blue", "Prism Crush Pink"],
+"Galaxy A52":["Awesome Black", "Awesome White", "Awesome Blue", "Awesome Violet"],
+"Galaxy A52s":["Awesome Black", "Awesome White", "Awesome Violet", "Awesome Mint"],
+"Galaxy A53":["Awesome Black", "Awesome White", "Awesome Blue", "Awesome Peach"],
+"Galaxy A54":["Awesome Graphite", "Awesome White", "Awesome Violet", "Awesome Lime"],
+"Galaxy A55":["Awesome Iceblue", "Awesome Navy", "Awesome Lemon", "Awesome Lilac"],
+"Galaxy A56":["Awesome Graphite", "Awesome Light Gray", "Awesome Olive", "Awesome Pink"],
+"Galaxy A70":["Black", "White", "Blue", "Coral"],
+"Galaxy A71":["Prism Crush Black", "Prism Crush Silver", "Prism Crush Blue", "Prism Crush Pink"],
+"Galaxy A72":["Awesome Black", "Awesome White", "Awesome Blue", "Awesome Violet"],
+"Galaxy A73":["Awesome Gray", "Awesome White", "Awesome Mint"],
+"Galaxy S20":["Cosmic Gray","Cloud Blue","Cloud Pink"],
+"Galaxy S20+":["Cosmic Gray","Cloud Blue","Cosmic Black"],
+"Galaxy S20 Ultra":["Cosmic Gray","Cosmic Black"],
+"Galaxy S20 FE":["Cloud Navy","Cloud Lavender","Cloud Mint","Cloud Red","Cloud Orange","Cloud White"],
+"Galaxy S21":["Phantom Gray","Phantom White","Phantom Violet","Phantom Pink"],
+"Galaxy S21+":["Phantom Black","Phantom Silver","Phantom Violet"],
+"Galaxy S21 Ultra":["Phantom Black","Phantom Silver","Phantom Titanium","Phantom Navy","Phantom Brown"],
+"Galaxy S21 FE":["Graphite","White","Olive","Lavender"],
+"Galaxy S22":["Phantom Black","Phantom White","Green","Pink Gold"],
+"Galaxy S22+":["Phantom Black","Phantom White","Green","Pink Gold"],
+"Galaxy S22 Ultra":["Phantom Black","Phantom White","Burgundy","Green"],
+"Galaxy S23":["Phantom Black","Cream","Green","Lavender"],
+"Galaxy S23+":["Phantom Black","Cream","Green","Lavender"],
+"Galaxy S23 Ultra":["Phantom Black","Cream","Green","Lavender"],
+"Galaxy S23 FE":["Mint","Cream","Purple","Graphite","Indigo"],
+"Galaxy S24":["Onyx Black","Marble Gray","Cobalt Violet","Amber Yellow"],
+"Galaxy S24+":["Onyx Black","Marble Gray","Cobalt Violet","Amber Yellow"],
+"Galaxy S24 Ultra":["Titanium Black","Titanium Gray","Titanium Violet","Titanium Yellow"],
+"Galaxy S24 FE":["Graphite","Gray","Mint","Blue","Yellow"],
+"Galaxy S25":["Icyblue","Mint","Navy","Silver Shadow"],
+"Galaxy S25+":["Icyblue","Mint","Navy","Silver Shadow"],
+"Galaxy S25 Ultra":["Titanium Silverblue","Titanium Black","Titanium Whitesilver","Titanium Gray"],
+"Galaxy S25 Edge":["Titanium Silver","Titanium Icyblue","Titanium Jetblack"],
+"Galaxy S25 FE":["Navy","Icy Blue","Jetblack","White"],
+"Galaxy S26":S26,
+"Galaxy S26+":S26,
+"Galaxy S26 Ultra":S26,
+"Galaxy Z Flip3":["Cream","Green","Lavender","Phantom Black","Gray","White","Pink"],
+"Galaxy Z Flip4":["Graphite","Pink Gold","Blue","Bora Purple"],
+"Galaxy Z Flip5":["Mint","Graphite","Lavender","Cream"],
+"Galaxy Z Flip6":["Silver Shadow","Blue","Yellow","Mint"],
+"Galaxy Z Flip7":["Blue Shadow","Jet Black","Coral Red","Mint"],
+"Galaxy Z Fold3":["Phantom Green","Phantom Silver","Phantom Black"],
+"Galaxy Z Fold4":["Phantom Black","Graygreen","Beige"],
+"Galaxy Z Fold5":["Icy Blue","Phantom Black","Cream"],
+"Galaxy Z Fold6":["Silver Shadow","Pink","Navy"],
+"Galaxy Z Fold7":["Blue Shadow","Silver Shadow","Jet Black","Mint"]
+};
+const MAC={"MacBook 12\" (2017) · A1534": ["Space Gray", "Silver", "Gold", "Rose Gold"], "MacBook Air 13\" (2017) · A1466": ["Space Gray", "Silver", "Gold"], "MacBook Pro 13\" (2017, 2 ports) · A1708": ["Space Gray", "Silver"], "MacBook Pro 13\" (2017, Touch Bar) · A1706": ["Space Gray", "Silver"], "MacBook Pro 15\" (2017) · A1707": ["Space Gray", "Silver"], "MacBook Air 13\" (2018) · A1932": ["Space Gray", "Silver", "Gold"], "MacBook Pro 13\" (2018/2019, 4 ports) · A1989": ["Space Gray", "Silver"], "MacBook Pro 15\" (2018/2019) · A1990": ["Space Gray", "Silver"], "MacBook Air 13\" (2019) · A1932": ["Space Gray", "Silver", "Gold"], "MacBook Pro 13\" (2019, 2 ports) · A2159": ["Space Gray", "Silver"], "MacBook Pro 16\" (2019) · A2141": ["Space Gray", "Silver"], "MacBook Air 13\" (2020, Intel) · A2179": ["Space Gray", "Silver", "Gold"], "MacBook Air 13\" (2020, M1) · A2337": ["Space Gray", "Silver", "Gold"], "MacBook Pro 13\" (2020, Intel) · A2251 / A2289": ["Space Gray", "Silver"], "MacBook Pro 13\" (2020, M1) · A2338": ["Space Gray", "Silver"], "MacBook Pro 14\" (2021, M1 Pro/Max) · A2442": ["Space Gray", "Silver"], "MacBook Pro 16\" (2021, M1 Pro/Max) · A2485": ["Space Gray", "Silver"], "MacBook Air 13\" (2022, M2) · A2681": ["Midnight", "Starlight", "Space Gray", "Silver"], "MacBook Pro 13\" (2022, M2) · A2338": ["Space Gray", "Silver"], "MacBook Air 15\" (2023, M2) · A2941": ["Midnight", "Starlight", "Space Gray", "Silver"], "MacBook Pro 14\" (2023, M2 Pro/Max) · A2779": ["Space Gray", "Silver"], "MacBook Pro 14\" (2023, M3) · A2918 / A2992": ["Space Black", "Silver"], "MacBook Pro 16\" (2023, M2 Pro/Max) · A2780": ["Space Gray", "Silver"], "MacBook Pro 16\" (2023, M3 Pro/Max) · A2991": ["Space Black", "Silver"], "MacBook Air 13\" (2024, M3) · A3113": ["Midnight", "Starlight", "Space Gray", "Silver"], "MacBook Air 15\" (2024, M3) · A3114": ["Midnight", "Starlight", "Space Gray", "Silver"], "MacBook Pro 14\" (2024, M4) · A3112 / A3401": ["Space Black", "Silver"], "MacBook Pro 16\" (2024, M4 Pro/Max) · A3403": ["Space Black", "Silver"], "MacBook Air 13\" (2025, M4) · A3240": ["Midnight", "Starlight", "Sky Blue", "Silver"], "MacBook Air 15\" (2025, M4) · A3241": ["Midnight", "Starlight", "Sky Blue", "Silver"], "MacBook Pro 14\" (2025, M5) · A3434": ["Space Black", "Silver"]};
+const IPH_A={"XR": "A1984", "11": "A2111", "11 Pro": "A2160", "11 Pro Max": "A2161", "SE (2nd gen)": "A2275", "12 mini": "A2176", "12": "A2172", "12 Pro": "A2341", "12 Pro Max": "A2342", "13 mini": "A2481", "13": "A2482", "13 Pro": "A2483", "13 Pro Max": "A2484", "SE (3rd gen)": "A2595", "14": "A2649", "14 Plus": "A2632", "14 Pro": "A2650", "14 Pro Max": "A2651", "15": "A2846", "15 Plus": "A2847", "15 Pro": "A2848", "15 Pro Max": "A2849", "16e": "A3409", "16": "A3081", "16 Plus": "A3082", "16 Pro": "A3083", "16 Pro Max": "A3084", "17": "A3258", "Air": "A3260", "17 Pro": "A3256", "17 Pro Max": "A3257", "18 Pro": "A3472", "18 Pro Max": "A3473"};
+const SM_NR={"A03": "SM-A035F", "A03s": "SM-A037F", "A04": "SM-A045F", "A04s": "SM-A047F", "A05": "SM-A055F", "A05s": "SM-A057F", "A06": "SM-A065F", "A07": "SM-A075F", "A10": "SM-A105F", "A11": "SM-A115F", "A12": "SM-A125F", "A13": "SM-A135F / SM-A136B", "A14": "SM-A145F / SM-A146B", "A15": "SM-A155F / SM-A156B", "A16": "SM-A165F / SM-A166B", "A17": "SM-A175F / SM-A176B", "A20e": "SM-A202F", "A21s": "SM-A217F", "A22": "SM-A225F / SM-A226B", "A23": "SM-A235F / SM-A236B", "A24": "SM-A245F", "A25": "SM-A256B", "A26": "SM-A266B", "A30": "SM-A305F", "A31": "SM-A315F", "A32": "SM-A325F / SM-A326B", "A33": "SM-A336B", "A34": "SM-A346B", "A35": "SM-A356B", "A36": "SM-A366B", "A40": "SM-A405F", "A41": "SM-A415F", "A42": "SM-A426B", "A50": "SM-A505F", "A51": "SM-A515F", "A52": "SM-A525F", "A52s": "SM-A528B", "A53": "SM-A536B", "A54": "SM-A546B", "A55": "SM-A556B", "A56": "SM-A566B", "A70": "SM-A705F", "A71": "SM-A715F", "A72": "SM-A725F", "A73": "SM-A736B", "S20": "SM-G980F", "S20+": "SM-G985F", "S20 Ultra": "SM-G988B", "S20 FE": "SM-G780F", "S21": "SM-G991B", "S21+": "SM-G996B", "S21 Ultra": "SM-G998B", "S21 FE": "SM-G990B", "S22": "SM-S901B", "S22+": "SM-S906B", "S22 Ultra": "SM-S908B", "S23": "SM-S911B", "S23+": "SM-S916B", "S23 Ultra": "SM-S918B", "S23 FE": "SM-S711B", "S24": "SM-S921B", "S24+": "SM-S926B", "S24 Ultra": "SM-S928B", "S24 FE": "SM-S721B", "S25": "SM-S931B", "S25+": "SM-S936B", "S25 Ultra": "SM-S938B", "S25 Edge": "SM-S937B", "S25 FE": "SM-S731B", "S26": "SM-S942B", "S26+": "SM-S947B", "S26 Ultra": "SM-S948B", "Z Flip3": "SM-F711B", "Z Flip4": "SM-F721B", "Z Flip5": "SM-F731B", "Z Flip6": "SM-F741B", "Z Flip7": "SM-F766B", "Z Fold3": "SM-F926B", "Z Fold4": "SM-F936B", "Z Fold5": "SM-F946B", "Z Fold6": "SM-F956B", "Z Fold7": "SM-F966B"};
+const LOCK={iPhone:"FMI",Samsung:"FRP",MacBook:"FMI",Anders:"Lock"};
+const OSL={iPhone:"iOS",Samsung:"Android",MacBook:"macOS",Anders:"OS"};
+function modelList(){
+  const c=$("cat").value;
+  if(c==="iPhone") return IPHONES.map(m=>"Apple iPhone "+m+" · "+IPH_A[m]);
+  if(c==="Samsung") return Object.keys(SAMSUNG).map(m=>"Samsung "+m+" · "+SM_NR[m.replace("Galaxy ","")]);
+  if(c==="MacBook") return Object.keys(MAC).map(m=>"Apple "+m);
+  return [];
+}
+function colorList(m){
+  const c=$("cat").value;
+  if(c==="iPhone") return COLORS[m.split(" · ")[0].replace("Apple iPhone ","")]||[];
+  if(c==="Samsung") return SAMSUNG[m.split(" · ")[0].replace("Samsung ","")]||[];
+  if(c==="MacBook") return MAC[m.replace("Apple ","")]||[];
+  return [];
+}
+function fillModels(){
+  const sel=$("model"), old=sel.value, list=modelList();
+  sel.innerHTML=list.map(m=>`<option>${m}</option>`).join("");
+  sel.value = list.includes(old)||old==="__other" ? old : (list[0]||"__other");
+}
+function fillColors(){
+  const list=colorList($("model").value);
+  const sel=$("color"), old=sel.value;
+  sel.innerHTML=list.map(c=>`<option>${c}</option>`).join("");
+  sel.value = list.includes(old)||old==="__other" ? old : (list[0]||"__other");
+}
+function autoA(){
+  const c=$("cat").value;
+  const m=$("model").value, i=m.indexOf(" · ");
+  if(i<0) return;
+  const nr=m.slice(i+3);
+  if(c==="Samsung") $("mnum").value=nr; else if(c==="iPhone"||c==="MacBook") $("anum").value=nr;
+}
+function setLabel(id,t){ $(id).parentElement.firstChild.nodeValue=t; }
+function setSel(id,val){ const el=$(id); if([...el.options].some(o=>o.value===val)) el.value=val; }
+// laden
+try{ const s = JSON.parse(localStorage.getItem(KEY)||"{}"); ids.forEach(i=>{ if(s[i]!==undefined) $(i).value=s[i]; }); }catch(e){}
+try{ const sv = JSON.parse(localStorage.getItem(KEY)||"{}"); fillModels(); if(sv.model) setSel("model",sv.model); fillColors(); if(sv.color) setSel("color",sv.color); }catch(e){ fillModels(); fillColors(); }
+if(!$("date").value) $("date").value = new Date().toISOString().slice(0,10);
+
+function fmtDate(v){ if(!v) return ""; const [y,m,d]=v.split("-"); return d+"/"+m+"/"+y; }
+
+const LAYOUTS={
+klassiek:d=>`
+   <div class="left">
+     <div>
+       <div class="title">${esc(d.title)}</div>
+       <div>${d.hasA?esc(d.anum)+" &nbsp; ":""}Color: ${esc(d.color)}</div>
+     </div>
+     <div class="row"><span>Srf: <b>${esc(d.serial)}</b></span></div>
+     ${d.isMac?`<div class="row"><span>Chip <b>${esc(d.chip)}</b></span><span>RAM <b>${esc(d.ram)} GB</b></span><span>SSD <b>${esc(d.stor)}</b></span></div>`:""}
+     <div class="row">
+       <span>${d.lock} <b>${esc(d.fmi)}</b></span>
+       <span>${d.os} <b>${esc(d.ios)}</b></span>
+       <span>Batt <b>${esc(d.batt)}%</b></span>${d.isMac&&d.cycles?`<span>Cycles <b>${esc(d.cycles)}</b></span>`:""}
+     </div>
+     <div class="row">
+       ${d.isMac?"":`<span>Sim: <b>${esc(d.sim)}</b></span>`}
+       <span>${esc(d.date)}</span><span>${esc(d.loc)}</span><span>Qty ${esc(d.qty)}</span>
+     </div>
+     <div class="row"><span>Repaired: <b>${esc(d.rep)}</b></span></div>
+     <div><span class="tag">${esc(d.grade)}</span></div>
+   </div>
+   <div class="right"><div class="bcwrap"><svg id="bc"></svg></div></div>`,
+
+compact:d=>`
+   <div class="cp">
+     <div class="cp-t">${esc(d.title)}</div>
+     <div class="cp-s">${d.hasA?esc(d.anum)+" · ":""}${esc(d.color)} · ${esc(d.spec)}</div>
+     <div class="cp-chips">
+       <i>${d.lock} ${esc(d.fmi)}</i><i>${d.os} ${esc(d.ios)}</i><i>Batt ${esc(d.batt)}%</i>
+       ${d.isMac?(d.cycles?`<i>Cycles ${esc(d.cycles)}</i>`:""):`<i>Sim ${esc(d.sim)}</i>`}
+       <i>${esc(d.date)}</i><i>${esc(d.loc)}</i><i>Repaired: ${esc(d.rep)}</i><i>${esc(d.grade)}</i>
+     </div>
+     <div class="cp-b"><svg id="bc"></svg><div class="cp-sr">${esc(d.serial)}</div></div>
+   </div>`,
+
+tabel:d=>`
+   <div class="tb">
+     <div class="tb-h">${esc(d.title)}</div>
+     <div class="tb-body">
+       <div class="tb-g">
+         <span>Serial</span><b>${esc(d.serial)}</b>
+         ${d.hasA?`<span>Model</span><b>${esc(d.anum)}</b>`:""}
+         <span>Color</span><b>${esc(d.color)}</b>
+         <span>${d.isMac?"Specs":"Storage"}</span><b>${esc(d.spec)}</b>
+         <span>${d.lock}</span><b>${esc(d.fmi)}</b>
+         <span>${d.os}</span><b>${esc(d.ios)}</b>
+         <span>Battery</span><b>${esc(d.batt)}%${d.isMac&&d.cycles?" · "+esc(d.cycles)+" cycles":""}</b>
+         ${d.isMac?"":`<span>Sim</span><b>${esc(d.sim)}</b>`}
+         <span>Repaired</span><b>${esc(d.rep)}</b>
+         <span>Grade</span><b>${esc(d.grade)}</b>
+         <span>Date</span><b>${esc(d.date)} · ${esc(d.loc)}</b>
+       </div>
+       <div class="tb-r"><svg id="bc"></svg></div>
+     </div>
+   </div>`,
+
+groot:d=>`
+   <div class="gr">
+     <div class="gr-top"><div class="gr-t">${esc(d.title)}</div><span class="tag">${esc(d.grade)}</span></div>
+     <div class="gr-stats">
+       <div><small>${d.isMac?"Specs":"Storage"}</small><b>${esc(d.isMac?d.ram+"GB/"+d.stor:d.stor)}</b></div>
+       <div><small>Battery</small><b>${esc(d.batt)}%</b></div>
+       <div><small>${d.os}</small><b>${esc(d.ios)}</b></div>
+       <div><small>${d.lock}</small><b>${esc(d.fmi)}</b></div>
+     </div>
+     <div class="gr-bot">
+       <div class="gr-info">
+         ${d.hasA?esc(d.anum)+" · ":""}${esc(d.color)}${d.isMac?" · "+esc(d.chip):""}<br>
+         ${d.isMac?(d.cycles?"Cycles "+esc(d.cycles)+" · ":""):"Sim: "+esc(d.sim)+" · "}Repaired: ${esc(d.rep)}<br>
+         ${esc(d.date)} · ${esc(d.loc)} · Srf: <b>${esc(d.serial)}</b>
+       </div>
+       <div class="gr-bc"><svg id="bc"></svg></div>
+     </div>
+   </div>`,
+
+minimaal:d=>`
+   <div class="mn">
+     <div class="mn-t">${esc(d.title)}</div>
+     <div class="mn-s">${esc(d.spec)} · ${esc(d.color)} · ${esc(d.batt)}% · ${d.lock} ${esc(d.fmi)}</div>
+     <svg id="bc"></svg>
+     <div class="mn-sr">${esc(d.serial)}</div>
+   </div>`
+};
+function render(){
+  const v = {}; ids.forEach(i=>v[i]=$(i).value.trim());
+  try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){}
+  const cat=v.cat, isA=cat==="Anders";
+  document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on",b.dataset.cat===cat));
+  $("model").parentElement.hidden=isA; $("color").parentElement.hidden=isA;
+  $("modelOtherL").hidden=!(isA||v.model==="__other"); $("colorOtherL").hidden=!(isA||v.color==="__other");
+  if(isA||v.model==="__other") v.model=v.modelOther;
+  if(isA||v.color==="__other") v.color=v.colorOther;
+  v.model=v.model.split(" · ")[0];
+  const isMac=cat==="MacBook", hasA=cat==="iPhone"||isMac;
+  $("anum").parentElement.hidden=!hasA;
+  ["sim"].forEach(i=>$(i).parentElement.hidden=isMac);
+  ["chip","ram","cycles"].forEach(i=>$(i).parentElement.hidden=!isMac);
+  const stor=+v.storage>=1024?(+v.storage/1024)+" TB":v.storage+" GB";
+  setLabel("fmi",LOCK[cat]);
+  setLabel("ios",cat==="iPhone"?"iOS-versie":cat==="Samsung"?"Android-versie":isMac?"macOS-versie":"Softwareversie");
+  $("mnum").placeholder=cat==="Samsung"?"SM-S918B":"";
+  const w = Math.max(30, +v.w||100), h = Math.max(20, +v.h||50);
+  const st = $("sticker");
+  st.style.width = w+"mm"; st.style.height = h+"mm";
+  const d={title:v.model+" "+v.mnum+(isMac?"":" "+stor),model:v.model,mnum:v.mnum,hasA,isMac,anum:v.anum,color:v.color,serial:v.serial,
+    lock:LOCK[cat],os:OSL[cat],fmi:v.fmi,ios:v.ios,batt:v.batt,cycles:v.cycles,chip:v.chip,ram:v.ram,stor,
+    spec:isMac?v.chip+" · "+v.ram+" GB RAM · "+stor+" SSD":stor,sim:v.sim,date:fmtDate(v.date),loc:v.loc,qty:v.qty,rep:v.rep,grade:v.grade};
+  st.innerHTML=(LAYOUTS[v.lay]||LAYOUTS.klassiek)(d);
+  try{
+    JsBarcode("#bc", v.serial||" ", {format:"CODE128", displayValue:false, margin:0, height:60, width:2});
+    $("bc").setAttribute("preserveAspectRatio","none");
+  }catch(e){}
+  document.getElementById("pageStyle").textContent = `@page{size:${w}mm ${h}mm;margin:0}`;
+}
+const ps = document.createElement("style"); ps.id="pageStyle"; document.head.appendChild(ps);
+$("model").addEventListener("input",()=>{ fillColors(); autoA(); });
+document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>{ $("cat").value=b.dataset.cat; fillModels(); fillColors(); autoA(); render(); }));
+ids.forEach(i=>$(i).addEventListener("input",render));
+render();
+
+// afbeelding opslaan
+$("saveImg").addEventListener("click", async ()=>{
+  const el = $("sticker");
+  const w = el.offsetWidth;
+  const scale = Math.max(2, 1200 / w);   // scherpe afbeelding
+  const canvas = await html2canvas(el,{scale,backgroundColor:"#ffffff"});
+  canvas.toBlob(async blob=>{
+    const file = new File([blob],"sticker-"+($("serial").value||"iphone")+".png",{type:"image/png"});
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      try{ await navigator.share({files:[file]}); return; }catch(e){ if(e.name==="AbortError") return; }
+    }
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = file.name; a.click();
+  },"image/png");
+});
+
+// ---- zoeken ----
+const norm=t=>String(t).toLowerCase().replace(/[^a-z0-9+]/g,"");
+function allModels(){
+  const r=[];
+  IPHONES.forEach(m=>r.push({cat:"iPhone",name:"Apple iPhone "+m+" · "+IPH_A[m]}));
+  Object.keys(SAMSUNG).forEach(m=>r.push({cat:"Samsung",name:"Samsung "+m+" · "+SM_NR[m.replace("Galaxy ","")]}));
+  Object.keys(MAC).forEach(m=>r.push({cat:"MacBook",name:"Apple "+m}));
+  return r;
+}
+function search(){
+  const box=$("qres"), q=$("q").value.trim();
+  if(!q){ box.innerHTML=""; return []; }
+  const toks=q.toLowerCase().split(/\s+/).map(norm).filter(Boolean);
+  const hits=allModels().map(o=>{
+    const title=norm(o.name.split(" · ")[0]), full=norm(o.name);
+    if(!toks.every(t=>full.includes(t))) return null;
+    return {o,score:toks.every(t=>title.includes(t))?0:1};
+  }).filter(Boolean).sort((a,b)=>a.score-b.score).slice(0,8).map(h=>h.o);
+  box.innerHTML="";
+  if(!hits.length){ box.innerHTML='<small style="color:var(--muted)">Niets gevonden</small>'; return hits; }
+  hits.forEach(o=>{
+    const b=document.createElement("button"); b.type="button";
+    const [n,nr]=o.name.split(" · ");
+    b.innerHTML="<span>"+esc(n)+"</span><small>"+esc(o.cat)+(nr?" · "+esc(nr):"")+"</small>";
+    b.addEventListener("click",()=>pick(o));
+    box.appendChild(b);
+  });
+  return hits;
+}
+function pick(o){
+  $("cat").value=o.cat; fillModels(); setSel("model",o.name); fillColors(); autoA(); render();
+  $("q").value=""; $("qres").innerHTML="";
+  $("model").scrollIntoView({block:"center",behavior:"smooth"});
+}
+$("q").addEventListener("input",search);
+$("q").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); const h=search(); if(h[0]) pick(h[0]); $("q").blur(); }});
+
+$("pdf").addEventListener("click",()=>window.print());
+</script>
+</body>
+</html>
